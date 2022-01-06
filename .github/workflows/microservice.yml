@@ -40,12 +40,13 @@ jobs:
         run: |
           BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == ('refs/heads/' + inputs.target_branch))
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch))
 
+      # assumes all other pushes are for tags
       - name: release image
         run: |
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
-        if: github.event_name == 'push' && github.ref != ('refs/heads/' + inputs.target_branch)
+        if: github.event_name == 'push' && !contains(github.ref, inputs.target_branch)
 
       - name: build
         run: |
