@@ -1,0 +1,127 @@
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        required: true
+        type: string
+      app:
+        required: true
+        type: string
+      language:
+        required: false
+        type: string
+        default: nodejs
+      target_branch:
+        required: false
+        type: string
+        default: main
+      aws_region:
+        required: false
+        type: string
+        default: us-east-2
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: nodejs version
+        run: |
+          PACKAGE_VERSION=$(jq -r .version package.json)
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+        if: inputs.language == 'nodejs'
+
+      - name: build version
+        run: |
+          BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
+          echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch))
+
+      # assumes all other pushes are for tags
+      - name: release version
+        run: |
+          TAG_VERSION=$(echo -n "${GITHUB_REF##*/}" | sed 's/v//g')
+          if [[ "$TAG_VERSION" != "${{ env.PACKAGE_VERSION }}" ]]; then
+            echo "Release tag version [$TAG_VERSION] does not match the app's version [${{ env.PACKAGE_VERSION }}]"
+            exit 1
+          fi
+          echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
+      # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
+      - name: build
+        run: |
+          docker build . -t $IMAGE
+
+      - name: aws creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws_region }}
+        if: github.event_name == 'push'
+
+      - name: registry login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        if: github.event_name == 'push'
+
+      - name: push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker tag $IMAGE $ECR_REGISTRY/$IMAGE
+          docker push $ECR_REGISTRY/$IMAGE
+        if: github.event_name == 'push'
+
+      - name: notify failure
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.16.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                  {   "type": "divider" },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": ":red_circle: ${{ github.workflow }} failed\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+                      }
+                  }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: notify success
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.16.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                  {   "type": "divider" },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": ":white_check_mark: ${{ github.workflow }} succeeded\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+                      }
+                  }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
