@@ -50,8 +50,13 @@ jobs:
       # assumes all other pushes are for tags
       - name: release version
         run: |
+          TAG_VERSION=$(echo -n "${GITHUB_REF##*/}" | sed 's/v//g')
+          if [[ "$TAG_VERSION" != "${{ env.PACKAGE_VERSION }}" ]]; then
+            echo "Release tag version [$TAG_VERSION] does not match the app's version [${{ env.PACKAGE_VERSION }}]"
+            exit 1
+          fi
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
-        if: github.event_name == 'push' && !contains(github.ref, inputs.target_branch)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
