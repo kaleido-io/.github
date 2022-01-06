@@ -1,0 +1,75 @@
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        required: true
+        type: string
+      app:
+        required: true
+        type: string
+      language:
+        required: false
+        type: string
+        default: nodejs
+      target_branch:
+        required: false
+        type: string
+        default: main
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: false # TODO
+      AWS_SECRET_ACCESS_KEY:
+        required: false # TODO
+      SLACK_WEBHOOK:
+        required: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: nodejs version
+        run: |
+          PACKAGE_VERSION=$(jq -r .version package.json)
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+        if: inputs.language == 'nodejs'
+
+      - name: build image
+        run: |
+          BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
+          echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == ('refs/heads/' + inputs.target_branch))
+
+      - name: release image
+        run: |
+          echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
+        if: github.event_name == 'push' && github.ref != ('refs/heads/' + inputs.target_branch)
+
+      - name: build
+        run: |
+          docker build . -t $IMAGE
+
+      - name: aws creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+        if: github.event_name == 'push'
+
+      - name: registry login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        if: github.event_name == 'push'
+
+      - name: push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker tag $IMAGE $ECR_REGISTRY/$IMAGE
+          docker push $ECR_REGISTRY/$IMAGE
+        if: github.event_name == 'push'
+
+      # TODO slack notification
