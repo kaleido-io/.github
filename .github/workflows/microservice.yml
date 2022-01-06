@@ -15,11 +15,15 @@ on:
         required: false
         type: string
         default: main
+      aws_region:
+        required: false
+        type: string
+        default: us-east-2
     secrets:
       AWS_ACCESS_KEY_ID:
-        required: false # TODO
+        required: true
       AWS_SECRET_ACCESS_KEY:
-        required: false # TODO
+        required: true
       SLACK_WEBHOOK_URL:
         required: false
 jobs:
@@ -59,7 +63,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          aws-region: ${{ inputs.aws_region }}
         if: github.event_name == 'push'
 
       - name: registry login
@@ -86,7 +90,7 @@ jobs:
                       "type": "section",
                       "text": {
                           "type": "mrkdwn",
-                          "text": ":red_circle: ${{ github.workflow }} failed\n<${{ github.server_url }}/${{ github.repository }}/runs/${{ github.run_id }}>"
+                          "text": ":red_circle: ${{ github.workflow }} failed\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
                       }
                   }
               ]
@@ -106,7 +110,7 @@ jobs:
                       "type": "section",
                       "text": {
                           "type": "mrkdwn",
-                          "text": ":white_check_mark: ${{ github.workflow }} succeeded\n<${{ github.server_url }}/${{ github.repository }}/runs/${{ github.run_id }}>"
+                          "text": ":white_check_mark: ${{ github.workflow }} succeeded\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
                       }
                   }
               ]
