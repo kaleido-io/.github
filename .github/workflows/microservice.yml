@@ -20,13 +20,14 @@ on:
         required: false # TODO
       AWS_SECRET_ACCESS_KEY:
         required: false # TODO
-      SLACK_WEBHOOK:
+      SLACK_WEBHOOK_URL:
         required: false
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: git checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
@@ -36,18 +37,19 @@ jobs:
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
         if: inputs.language == 'nodejs'
 
-      - name: build image
+      - name: build version
         run: |
           BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch))
 
       # assumes all other pushes are for tags
-      - name: release image
+      - name: release version
         run: |
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
         if: github.event_name == 'push' && !contains(github.ref, inputs.target_branch)
 
+      # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
         run: |
           docker build . -t $IMAGE
@@ -73,4 +75,42 @@ jobs:
           docker push $ECR_REGISTRY/$IMAGE
         if: github.event_name == 'push'
 
-      # TODO slack notification
+      - name: notify failure
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.16.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": ":red_circle: ${{ github.workflow }} failed\n<${{ github.server_url }}/${{ github.repository }}/runs/${{ github.run_id }}>"
+                      }
+                  }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: notify success
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.16.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": ":white_check_mark: ${{ github.workflow }} succeeded\n<${{ github.server_url }}/${{ github.repository }}/runs/${{ github.run_id }}>"
+                      }
+                  }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
