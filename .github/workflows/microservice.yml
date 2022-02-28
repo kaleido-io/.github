@@ -117,7 +117,7 @@ jobs:
                       "type": "section",
                       "text": {
                           "type": "mrkdwn",
-                          "text": ":white_check_mark: ${{ github.workflow }} succeeded\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+                          "text": ":white_check_mark: ${{ github.workflow }} succeeded\n:whale: ${{ env.IMAGE }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
                       }
                   }
               ]
