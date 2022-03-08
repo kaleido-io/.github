@@ -19,6 +19,10 @@ on:
         required: false
         type: string
         default: us-east-2
+      docker_build_args:
+        required: false
+        type: string
+        default: ""
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -61,7 +65,7 @@ jobs:
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
         run: |
-          docker build . -t $IMAGE
+          docker build ${{ inputs.docker_build_args }} . -t $IMAGE
 
       - name: aws creds
         uses: aws-actions/configure-aws-credentials@v1
