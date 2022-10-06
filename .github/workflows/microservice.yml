@@ -27,6 +27,10 @@ on:
         required: false
         type: string
         default: ""
+      working_dir:
+        required: false
+        type: string
+        default: "./"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -48,17 +52,20 @@ jobs:
           PACKAGE_VERSION=$(jq -r .version package.json)
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
         if: inputs.language == 'nodejs'
+        working-directory: ${{ inputs.working_dir }}
 
       - name: provided version
         run: |
           echo "PACKAGE_VERSION=${{ inputs.next_version }}" >> $GITHUB_ENV
         if: inputs.next_version != '' && inputs.language != 'nodejs'
+        working-directory: ${{ inputs.working_dir }}
 
       - name: build version
         run: |
           BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch))
+        working-directory: ${{ inputs.working_dir }}
 
       # assumes all other pushes are for tags
       - name: release version
@@ -70,11 +77,13 @@ jobs:
           fi
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        working-directory: ${{ inputs.working_dir }}
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
         run: |
           docker build ${{ inputs.docker_build_args }} . -t $IMAGE
+        working-directory: ${{ inputs.working_dir }}
 
       - name: aws creds
         uses: aws-actions/configure-aws-credentials@v1
@@ -89,6 +98,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         if: github.event_name == 'push'
 
+
       - name: push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -96,6 +106,7 @@ jobs:
           docker tag $IMAGE $ECR_REGISTRY/$IMAGE
           docker push $ECR_REGISTRY/$IMAGE
         if: github.event_name == 'push'
+        working-directory: ${{ inputs.working_dir }}
 
       - name: notify failure
         if: failure() && env.SLACK_WEBHOOK_URL != ''
