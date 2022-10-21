@@ -55,7 +55,7 @@ on:
         required: true
       SLACK_WEBHOOK_URL:
         required: false
-      GITHUB_ACCESS_TOKEN:
+      GITHUB_SSH_KEY:
         required: false
 jobs:
   build:
@@ -105,7 +105,7 @@ jobs:
           repository: kaleido-io/${{ inputs.clone_private_repo }}
           path: ${{ inputs.working_dir }}/${{ inputs.clone_private_repo }}
           ref: ${{ inputs.clone_private_repo_ref }}
-          token: ${{ secrets.GITHUB_ACCESS_TOKEN }}
+          ssh-key: ${{ secrets.GITHUB_SSH_KEY }}
         if: inputs.clone_private_repo != ''
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
