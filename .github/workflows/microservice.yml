@@ -55,7 +55,7 @@ on:
         required: true
       SLACK_WEBHOOK_URL:
         required: false
-      SSH_KEY_PRIVATE_REPO:
+      ORG_PAT:
         required: false
 jobs:
   build:
@@ -74,7 +74,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
-          ssh-key: ${{ secrets.SSH_KEY_PRIVATE_REPO }}
+          token: ${{ secrets.ORG_PAT }}
         if: inputs.submodules == 'recursive'
 
       - name: nodejs version
