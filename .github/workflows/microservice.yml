@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          submodules: ${{ inputs.submodules == 'true }}
+          submodules: ${{ inputs.submodules == 'true' }}
         if: inputs.submodules == 'true' || inputs.submodules == 'false'
 
       - name: git checkout w/ recursive submodules
