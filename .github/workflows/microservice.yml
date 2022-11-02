@@ -41,6 +41,7 @@ on:
         default: "./"
       submodules:
         required: false
+        type: string
         description: >
           Whether to checkout submodules: `true` to checkout submodules or `recursive` to
           recursively checkout submodules.
