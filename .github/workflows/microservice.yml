@@ -66,14 +66,14 @@ jobs:
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true }}
-        if: ${{ inputs.submodules == 'true' || inputs.submodules == 'false' }}
+        if: inputs.submodules == 'true' || inputs.submodules == 'false'
 
       - name: git checkout w/ recursive submodules
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          submodules: ${{ inputs.submodules == 'true }}
-        if: ${{ inputs.submodules == 'recursive' }}
+          submodules: ${{ inputs.submodules }}
+        if: inputs.submodules == 'recursive'
 
       - name: nodejs version
         run: |
