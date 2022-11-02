@@ -68,11 +68,13 @@ jobs:
           submodules: ${{ inputs.submodules == 'true' }}
         if: inputs.submodules == 'true' || inputs.submodules == 'false'
 
+      # assumes the submodules is a private repo
       - name: git checkout w/ recursive submodules
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
+          ssh-key: ${{ secrets.SSH_KEY_PRIVATE_REPO }}
         if: inputs.submodules == 'recursive'
 
       - name: nodejs version
