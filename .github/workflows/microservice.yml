@@ -55,6 +55,8 @@ on:
         required: true
       SLACK_WEBHOOK_URL:
         required: false
+      SSH_KEY_PRIVATE_REPO:
+        required: false
       ORG_PAT:
         required: false
 jobs:
@@ -115,7 +117,7 @@ jobs:
           repository: kaleido-io/${{ inputs.clone_private_repo }}
           path: ${{ inputs.working_dir }}/${{ inputs.clone_private_repo }}
           ref: ${{ inputs.clone_private_repo_ref }}
-          ssh-key: ${{ secrets.ORG_PAT }}
+          ssh-key: ${{ secrets.SSH_KEY_PRIVATE_REPO }}
         if: inputs.clone_private_repo != ''
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
