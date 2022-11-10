@@ -55,6 +55,8 @@ on:
         required: true
       SLACK_WEBHOOK_URL:
         required: false
+      SSH_KEY_PRIVATE_REPO:
+        required: false
       ORG_PAT:
         required: false
 jobs:
