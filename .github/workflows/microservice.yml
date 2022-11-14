@@ -26,6 +26,7 @@ on:
       docker_image_tag:
         required: false
         description: Provide a docker image tag to use for the docker push
+        default: ""
       docker_build_args:
         required: false
         type: string
@@ -126,7 +127,11 @@ jobs:
 
       - name: build version
         run: |
-          BUILD_VERSION="${{ inputs.docker_image_tag }} || ${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
+          BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
+          if [[ "${{ inputs.docker_image_tag }}" != "" ]]; then
+            echo "Using the provided docker image tag: ${{ inputs.docker_image_tag }}"
+            BUILD_VERSION="${{ inputs.docker_image_tag }}"
+          fi
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch)) || (github.event_name == 'workflow_dispatch' && inputs.docker_push == true)
         working-directory: ${{ inputs.working_dir }}
