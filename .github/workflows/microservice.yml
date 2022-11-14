@@ -19,6 +19,13 @@ on:
         required: false
         type: string
         default: us-east-2
+      docker_push:
+        required: false
+        description: Push docker image to the configured registry
+        default: true
+      docker_image_tag:
+        required: false
+        description: Provide a docker image tag to use for the docker push
       docker_build_args:
         required: false
         type: string
@@ -85,7 +92,7 @@ jobs:
           token: ${{ secrets.ORG_PAT }}
         if: inputs.submodules == 'recursive' && github.event_name != 'workflow_dispatch'
 
-# Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
+      # Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
       - name: git checkout workflow_dispatch
         uses: actions/checkout@v2
         with:
@@ -119,9 +126,9 @@ jobs:
 
       - name: build version
         run: |
-          BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
+          BUILD_VERSION="${{ inputs.docker_image_tag }} || ${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch)) || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch)) || (github.event_name == 'workflow_dispatch' && inputs.docker_push == true)
         working-directory: ${{ inputs.working_dir }}
 
       # assumes all other pushes are for tags
@@ -164,12 +171,12 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.aws_region }}
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.docker_push == true)
 
       - name: registry login
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.docker_push == true)
 
 
       - name: push
@@ -178,7 +185,7 @@ jobs:
         run: |
           docker tag $IMAGE $ECR_REGISTRY/$IMAGE
           docker push $ECR_REGISTRY/$IMAGE
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.docker_push == true)
         working-directory: ${{ inputs.working_dir }}
 
       - name: notify failure
