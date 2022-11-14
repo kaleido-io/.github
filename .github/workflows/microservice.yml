@@ -27,14 +27,6 @@ on:
         required: false
         type: string
         default: ""
-      clone_private_repo:
-        required: false
-        type: string
-        default: ""
-      clone_private_repo_ref:
-        required: false
-        type: string
-        default: ""
       working_dir:
         required: false
         type: string
@@ -54,8 +46,6 @@ on:
       AWS_SECRET_ACCESS_KEY:
         required: true
       SLACK_WEBHOOK_URL:
-        required: false
-      SSH_KEY_PRIVATE_REPO:
         required: false
       ORG_PAT:
         required: false
@@ -110,15 +100,6 @@ jobs:
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         working-directory: ${{ inputs.working_dir }}
-
-      - name: clone private repo
-        uses: actions/checkout@v3
-        with:
-          repository: kaleido-io/${{ inputs.clone_private_repo }}
-          path: ${{ inputs.working_dir }}/${{ inputs.clone_private_repo }}
-          ref: ${{ inputs.clone_private_repo_ref }}
-          ssh-key: ${{ secrets.SSH_KEY_PRIVATE_REPO }}
-        if: inputs.clone_private_repo != ''
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
