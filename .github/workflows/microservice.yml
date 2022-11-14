@@ -21,10 +21,12 @@ on:
         default: us-east-2
       docker_push:
         required: false
+        type: boolean
         description: Push docker image to the configured registry
         default: true
       docker_image_tag:
         required: false
+        type: string
         description: Provide a docker image tag to use for the docker push
         default: ""
       docker_build_args:
