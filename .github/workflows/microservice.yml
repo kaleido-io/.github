@@ -68,7 +68,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
-        if: inputs.submodules == 'true' || inputs.submodules == 'false'
+        if: (inputs.submodules == 'true' || inputs.submodules == 'false')  && github.event_name != 'workflow_dispatch'
 
       # assumes the submodules is a private repo
       - name: git checkout w/ recursive submodules
@@ -77,7 +77,7 @@ jobs:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
           token: ${{ secrets.ORG_PAT }}
-        if: inputs.submodules == 'recursive'
+        if: inputs.submodules == 'recursive' && github.event_name != 'workflow_dispatch'
 
 # Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
       - name: git checkout workflow_dispatch
