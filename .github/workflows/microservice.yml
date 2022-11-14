@@ -74,7 +74,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
-        if: inputs.submodules == 'true' || inputs.submodules == 'false'
+        if: (inputs.submodules == 'true' || inputs.submodules == 'false')  && github.event_name != 'workflow_dispatch'
 
       # assumes the submodules is a private repo
       - name: git checkout w/ recursive submodules
@@ -83,7 +83,26 @@ jobs:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
           token: ${{ secrets.ORG_PAT }}
-        if: inputs.submodules == 'recursive'
+        if: inputs.submodules == 'recursive' && github.event_name != 'workflow_dispatch'
+
+# Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
+      - name: git checkout workflow_dispatch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules == 'true' }}
+          ref: ${{ inputs.target_branch }}
+        if: (inputs.submodules == 'true' || inputs.submodules == 'false') && github.event_name == 'workflow_dispatch'
+
+      # assumes the submodules is a private repo
+      - name: git checkout w/ recursive submodules workflow_dispatch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules }}
+          token: ${{ secrets.ORG_PAT }}
+          ref: ${{ inputs.target_branch }}
+        if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
 
       - name: nodejs version
         run: |
@@ -102,7 +121,7 @@ jobs:
         run: |
           BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           echo "IMAGE=${{ inputs.namespace }}-${{ inputs.app }}:$BUILD_VERSION" >> $GITHUB_ENV
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch))
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.ref, inputs.target_branch)) || github.event_name == 'workflow_dispatch'
         working-directory: ${{ inputs.working_dir }}
 
       # assumes all other pushes are for tags
@@ -145,12 +164,12 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.aws_region }}
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
       - name: registry login
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
 
       - name: push
@@ -159,7 +178,7 @@ jobs:
         run: |
           docker tag $IMAGE $ECR_REGISTRY/$IMAGE
           docker push $ECR_REGISTRY/$IMAGE
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ inputs.working_dir }}
 
       - name: notify failure
