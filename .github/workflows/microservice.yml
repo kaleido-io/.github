@@ -14,7 +14,6 @@ on:
       target_branch:
         required: false
         type: string
-        default: main
       aws_region:
         required: false
         type: string
@@ -84,6 +83,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
+          ref: ${{ inputs.target_branch }}
         if: (inputs.submodules == 'true' || inputs.submodules == 'false')  && github.event_name != 'workflow_dispatch'
 
       # assumes the submodules is a private repo
@@ -93,6 +93,7 @@ jobs:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
           token: ${{ secrets.ORG_PAT }}
+          ref: ${{ inputs.target_branch }}
         if: inputs.submodules == 'recursive' && github.event_name != 'workflow_dispatch'
 
       # Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
@@ -101,7 +102,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
-          ref: ${{ inputs.target_branch }}
         if: (inputs.submodules == 'true' || inputs.submodules == 'false') && github.event_name == 'workflow_dispatch'
 
       # assumes the submodules is a private repo
