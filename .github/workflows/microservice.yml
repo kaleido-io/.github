@@ -1,5 +1,9 @@
 on:
   workflow_call:
+    outputs:
+      image:
+        description: "pushed image"
+        value: ${{ jobs.build.outputs.image }}
     inputs:
       namespace:
         required: true
@@ -68,6 +72,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.push.outputs.IMAGE }}
     steps:
       - name: git checkout
         uses: actions/checkout@v2
@@ -118,6 +124,7 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
 
       - name: build version
+        id: version
         run: |
           BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           if [[ "${{ inputs.docker_image_tag }}" != "" ]]; then
@@ -168,11 +175,13 @@ jobs:
 
 
       - name: push
+        id: push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           docker tag $IMAGE $ECR_REGISTRY/$IMAGE
           docker push $ECR_REGISTRY/$IMAGE
+          echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
         if: github.event_name == 'push' || inputs.docker_push == true
         working-directory: ${{ inputs.working_dir }}
 
