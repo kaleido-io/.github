@@ -148,17 +148,15 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
+      - name: set npm token
+        run: |
+          echo "NPM_BUILD_ARG='--build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }}'" >> $GITHUB_OUTPUT
+        if: inputs.build_with_npm_token == true
+
       - name: build
         run: |
-          docker build ${{ inputs.docker_build_args }} . -t $IMAGE
+          docker build $NPM_BUILD_ARG ${{ inputs.docker_build_args }} . -t $IMAGE
         working-directory: ${{ inputs.working_dir }}
-        if: inputs.build_with_npm_token == false
-
-      - name: build with secret args
-        run: |
-          docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} . -t $IMAGE
-        working-directory: ${{ inputs.working_dir }}
-        if: inputs.build_with_npm_token == true
 
       - name: aws creds
         uses: aws-actions/configure-aws-credentials@v1
