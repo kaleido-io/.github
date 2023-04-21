@@ -2,7 +2,7 @@ on:
   workflow_call:
     outputs:
       image:
-        description: "pushed image"
+        description: 'pushed image'
         value: ${{ jobs.build.outputs.image }}
     inputs:
       namespace:
@@ -32,11 +32,11 @@ on:
         required: false
         type: string
         description: Provide a docker image tag to use for the docker push
-        default: ""
+        default: ''
       docker_build_args:
         required: false
         type: string
-        default: ""
+        default: ''
       build_with_npm_token:
         required: false
         type: boolean
@@ -44,11 +44,11 @@ on:
       next_version:
         required: false
         type: string
-        default: ""
+        default: ''
       working_dir:
         required: false
         type: string
-        default: "./"
+        default: './'
       submodules:
         required: false
         type: string
@@ -57,7 +57,7 @@ on:
           recursively checkout submodules.
           When the `ssh-key` input is not provided, SSH URLs beginning with `git@github.com:` are
           converted to HTTPS.
-        default: "false"
+        default: 'false'
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -147,19 +147,6 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         working-directory: ${{ inputs.working_dir }}
 
-      # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
-      - name: build
-        run: |
-          docker build ${{ inputs.docker_build_args }} . -t $IMAGE
-        working-directory: ${{ inputs.working_dir }}
-        if: inputs.build_with_npm_token == false
-
-      - name: build with secret args
-        run: |
-          docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} ${{ inputs.docker_build_args }} . -t $IMAGE
-        working-directory: ${{ inputs.working_dir }}
-        if: inputs.build_with_npm_token == true
-
       - name: aws creds
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -173,6 +160,18 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         if: github.event_name == 'push' || inputs.docker_push == true
 
+      # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
+      - name: build
+        run: |
+          docker build ${{ inputs.docker_build_args }} . -t $IMAGE
+        working-directory: ${{ inputs.working_dir }}
+        if: inputs.build_with_npm_token == false
+
+      - name: build with secret args
+        run: |
+          docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} ${{ inputs.docker_build_args }} . -t $IMAGE
+        working-directory: ${{ inputs.working_dir }}
+        if: inputs.build_with_npm_token == true
 
       - name: push
         id: push
