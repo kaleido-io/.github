@@ -177,7 +177,6 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         if: github.event_name == 'push' || inputs.docker_push == true
 
-
       - name: push
         id: push
         env:
@@ -185,8 +184,11 @@ jobs:
         run: |
           docker tag $IMAGE $ECR_REGISTRY/$IMAGE
           docker push $ECR_REGISTRY/$IMAGE
+          SHA=$(docker images --no-trunc --quiet $IMAGE)
+          echo "Pushed $IMAGE with digest $SHA"
           echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
-          echo "SHA=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE)" >> $GITHUB_OUTPUT
+          echo "SHA=$SHA" >> $GITHUB_OUTPUT
+
         if: github.event_name == 'push' || inputs.docker_push == true
         working-directory: ${{ inputs.working_dir }}
 
