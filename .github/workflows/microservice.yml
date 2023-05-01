@@ -4,9 +4,9 @@ on:
       image:
         description: "pushed image"
         value: ${{ jobs.build.outputs.image }}
-      imageSHA:
+      image_sha:
         description: "SHA of pushed image"
-        value: ${{ jobs.build.outputs.imageSHA }}
+        value: ${{ jobs.build.outputs.image_sha }}
     inputs:
       namespace:
         required: true
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.push.outputs.IMAGE }}
-      imageSHA: ${{ steps.push.outputs.SHA }}
+      image_sha: ${{ steps.push.outputs.SHA }}
     steps:
       - name: git checkout
         uses: actions/checkout@v2
