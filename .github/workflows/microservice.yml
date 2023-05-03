@@ -61,6 +61,13 @@ on:
           When the `ssh-key` input is not provided, SSH URLs beginning with `git@github.com:` are
           converted to HTTPS.
         default: "false"
+      run_component_test:
+        required: false
+        type: boolean
+        description: >
+          Whether to run component test.  Requires a makefile target of component_test.
+          (support for package.json script to be added in future )
+        default: false  
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -163,6 +170,11 @@ jobs:
           docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} ${{ inputs.docker_build_args }} . -t $IMAGE
         working-directory: ${{ inputs.working_dir }}
         if: inputs.build_with_npm_token == true
+
+      - name: component-test
+        run: make component-test
+        working-directory: ${{ inputs.working_dir }}/${{ inputs.app }}
+        if: inputs.run_component_test == true
 
       - name: aws creds
         uses: aws-actions/configure-aws-credentials@v1
