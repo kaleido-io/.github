@@ -153,12 +153,10 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.aws_region }}
-        if: github.event_name == 'push' || inputs.docker_push == true
 
       - name: registry login
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-        if: github.event_name == 'push' || inputs.docker_push == true
 
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
