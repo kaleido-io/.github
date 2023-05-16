@@ -129,7 +129,12 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
 
       - name: Audit for node.js vulnerabilities
-        run: npx audit-ci@^6 -h --config ./audit-ci.jsonc
+        run: |
+          if [ -f "./audit-ci.jsonc" ]; then
+            npx audit-ci@^6 -h --config ./audit-ci.jsonc
+          else
+            npx audit-ci@^6 -h
+          fi
         if: inputs.language == 'nodejs'
         working-directory: ${{ inputs.working_dir }}
 
