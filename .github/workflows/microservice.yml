@@ -2,10 +2,10 @@ on:
   workflow_call:
     outputs:
       image:
-        description: 'pushed image'
+        description: "pushed image"
         value: ${{ jobs.build.outputs.image }}
       image_sha:
-        description: 'SHA of pushed image'
+        description: "SHA of pushed image"
         value: ${{ jobs.build.outputs.image_sha }}
     inputs:
       namespace:
@@ -35,11 +35,11 @@ on:
         required: false
         type: string
         description: Provide a docker image tag to use for the docker push
-        default: ''
+        default: ""
       docker_build_args:
         required: false
         type: string
-        default: ''
+        default: ""
       build_with_npm_token:
         required: false
         type: boolean
@@ -47,11 +47,11 @@ on:
       next_version:
         required: false
         type: string
-        default: ''
+        default: ""
       working_dir:
         required: false
         type: string
-        default: './'
+        default: "./"
       submodules:
         required: false
         type: string
@@ -60,7 +60,7 @@ on:
           recursively checkout submodules.
           When the `ssh-key` input is not provided, SSH URLs beginning with `git@github.com:` are
           converted to HTTPS.
-        default: 'false'
+        default: "false"
       run_component_test:
         required: false
         type: boolean
@@ -125,6 +125,11 @@ jobs:
         run: |
           PACKAGE_VERSION=$(jq -r .version package.json)
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+        if: inputs.language == 'nodejs'
+        working-directory: ${{ inputs.working_dir }}
+
+      - name: Audit for node.js vulnerabilities
+        run: npx audit-ci@^6 --config ./audit-ci.jsonc -h
         if: inputs.language == 'nodejs'
         working-directory: ${{ inputs.working_dir }}
 
