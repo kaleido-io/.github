@@ -176,6 +176,12 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         if: inputs.build_with_npm_token == false
 
+      - name: buildx
+        run: |
+          docker buildx build ${{ inputs.docker_buildx_args }} . -t $IMAGE
+        working-directory: ${{ inputs.working_dir }}
+        if: inputs.build_with_npm_token == false
+
       - name: build with secret args
         run: |
           docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} ${{ inputs.docker_build_args }} . -t $IMAGE
