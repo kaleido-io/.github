@@ -87,7 +87,7 @@ jobs:
       image_sha: ${{ steps.push.outputs.SHA }}
     steps:
       - name: git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
@@ -95,7 +95,7 @@ jobs:
 
       # assumes the submodules is a private repo
       - name: git checkout w/ recursive submodules
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
@@ -104,7 +104,7 @@ jobs:
 
       # Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
       - name: git checkout workflow_dispatch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
@@ -113,13 +113,20 @@ jobs:
 
       # assumes the submodules is a private repo
       - name: git checkout w/ recursive submodules workflow_dispatch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: ${{ inputs.submodules }}
           token: ${{ secrets.ORG_PAT }}
           ref: ${{ inputs.target_branch }}
         if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
+
+      - name: setup qemu
+        uses: docker/setup-qemu-action@v2
+
+      - name: setup docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: nodejs version
         run: |
