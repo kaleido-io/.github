@@ -86,6 +86,10 @@ jobs:
     runs-on: ubuntu-latest
 
     ## BEGINNING OF WHATS DIFFERENT FOR PSQL CONTAINERIZED BUILDS
+    ##
+    ## NOTE: This build does NOT contain pushing to docker registries, as that would require more working out
+    ##       of docker-in-docker for things like registry login and pushing.
+    ##
     container: golang:1.20-bullseye
     defaults:
       run:
@@ -190,7 +194,6 @@ jobs:
         run: |
           make
         working-directory: ${{ inputs.working_dir }}/${{ inputs.app }}
-        if: inputs.run_component_test == true
 
       - name: component-test
         run: |
