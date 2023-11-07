@@ -17,10 +17,14 @@ on:
         required: false
         type: string
         default: './'
+      main_go_dir:
+        required: false
+        type: string
+        default: './'
       node_version:
         required: false
         type: string
-        default: 18
+        default: '18'
       submodules:
         required: false
         type: string
@@ -92,7 +96,7 @@ jobs:
 
       - name: verify license types
         run: license-checker-rseidelsohn --production --unknown --failOn "GPL;AGPL"
-        working-directory: ${{ inputs.working_dir }}
+        #working-directory: ${{ inputs.working_dir }}
 
       - name: list dependencies for release
         id: dependencies
@@ -105,3 +109,90 @@ jobs:
           echo "$DEPENDENCIES"
         working-directory: ${{ inputs.working_dir }}
 
+  dependency-check-go:
+    if : ${{ inputs.package_manager }} == 'go'
+    runs-on: ubuntu-latest
+    outputs:
+      dependencies: ${{ steps.dependencies.outputs.DEPENDENCIES }}
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules == 'true' }}
+        if: (inputs.submodules == 'true' || inputs.submodules == 'false')  && github.event_name != 'workflow_dispatch'
+      
+      # assumes the submodules is a private repo
+      - name: git checkout w/ recursive submodules
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules }}
+          token: ${{ secrets.ORG_PAT }}
+        if: inputs.submodules == 'recursive' && github.event_name != 'workflow_dispatch'
+
+      # Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
+      - name: git checkout workflow_dispatch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules == 'true' }}
+          ref: ${{ inputs.target_branch }}
+        if: (inputs.submodules == 'true' || inputs.submodules == 'false') && github.event_name == 'workflow_dispatch'
+
+      # assumes the submodules is a private repo
+      - name: git checkout w/ recursive submodules workflow_dispatch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules }}
+          token: ${{ secrets.ORG_PAT }}
+          ref: ${{ inputs.target_branch }}
+        if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
+
+      - name: install go-licenses
+        run: go get -u github.com/google/go-licenses@latest
+      
+      - name: install miller csv parser tool
+        run: sudo apt-get install miller
+
+      - name: verify license types
+        run: |
+          go-licenses check --disallowed_types restricted --disallowed_types forbidden --ignore github.com/kaleido-io . 2> /dev/null
+          # forbidden list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L341
+          # restricted list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L185
+        working-directory: ${{ inputs.main_go_dir }}
+
+      - name: list dependencies for release
+        id: dependencies
+        run: |
+          GO_LICENSES=$(go-licenses report . --ignore github.com/kaleido-io 2> /dev/null | mlr --csv --implicit-csv-header label dependency,repo,license | mlr --icsv --ojson cat | jq 'reduce .[] as $item ({}; . + {($item.dependency): $item.license})')
+          # this is a JSON like:
+          # { "github.com/aidarkhanov/nanoid": "MIT", ...}
+          GO_MOD_DEPS=$(go mod edit --json | jq '.Require')
+          # filter out entries that are "indirect": true
+          GO_MOD_DEPS=$(echo $GO_MOD_DEPS | jq 'map(select(.Indirect == null))')
+          # that is a list like:
+          # [{ "Path": "github.com/cert-manager/cert-manager","Version": "v1.9.1"}, {...}]
+          
+          # for each dependency, find its license and construct a json in the form of:
+          # { "github.com/aidarkhanov/nanoid@v1.9.1": "MIT", ...}
+          # note: the dependency from GO_MOD_DEPS may be a substring of one in GO_LICENSES and may not fully exactly
+          DEPENDENCIES=$(jq -n \
+            --argjson go_licenses "$GO_LICENSES" \
+            --argjson go_mod_deps "$GO_MOD_DEPS" \
+            '[
+              $go_mod_deps[] | 
+              {
+                path: .Path,
+                version: .Version,
+                license: ($go_licenses | to_entries[] | select(.Path | contains(.key)) | .value)
+              }
+            ] | 
+            reduce .[] as $item ({}; . + {($item.path + "@" + $item.version): $item.license})')
+
+          echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
+          echo $DEPENDENCIES >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "$DEPENDENCIES"
+        working-directory: ${{ inputs.main_go_dir }}
