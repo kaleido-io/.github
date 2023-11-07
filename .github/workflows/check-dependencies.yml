@@ -102,5 +102,6 @@ jobs:
           echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
           echo $DEPENDENCIES >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          echo "$DEPENDENCIES"
         working-directory: ${{ inputs.working_dir }}
 
