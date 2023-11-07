@@ -5,9 +5,6 @@ on:
         description: 'project dependencies, versions and licenses'
         value: ${{ jobs.build.outputs.dependencies }}
     inputs:
-      app:
-        required: true
-        type: string
       package_manager:
         required: true
         type: string
@@ -95,7 +92,7 @@ jobs:
 
       - name: verify license types
         run: license-checker-rseidelsohn --production --unknown --failOn "GPL;AGPL"
-        working-directory: ${{ inputs.working_dir }}/${{ inputs.app }}
+        working-directory: ${{ inputs.working_dir }}
 
       - name: list dependencies for release
         id: dependencies
@@ -103,5 +100,5 @@ jobs:
           DEPENDENCIES=$(license-checker-rseidelsohn --direct 0 --production --unknown --json)
           DEPENDENCIES=$(echo $DEPENDENCIES | jq 'with_entries(.value = .value.licenses)')
           echo "DEPENDENCIES=$DEPENDENCIES" >> $DEPENDENCIES
-        working-directory: ${{ inputs.working_dir }}/${{ inputs.app }} 
+        working-directory: ${{ inputs.working_dir }}
 
