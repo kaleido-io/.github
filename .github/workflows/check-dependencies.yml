@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         default: './'
+      node_version:
+        required: false
+        type: string
+        default: 18
       submodules:
         required: false
         type: string
@@ -76,10 +80,10 @@ jobs:
           ref: ${{ inputs.target_branch }}
         if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
 
-      - name: install node@lts
+      - name: install node@${{inputs.node_version}}
         uses: actions/setup-node@v3
         with:
-          node-version: lts
+          node-version: ${{ inputs.node_version }}
 
       - name: install npm dependencies
         run: npm install --production
