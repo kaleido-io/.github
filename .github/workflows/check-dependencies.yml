@@ -151,7 +151,7 @@ jobs:
         if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
 
       - name: install go-licenses
-        run: go get -u github.com/google/go-licenses@latest
+        run: go install github.com/google/go-licenses@latest
       
       - name: install miller csv parser tool
         run: sudo apt-get install miller
