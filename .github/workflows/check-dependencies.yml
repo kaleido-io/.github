@@ -99,6 +99,8 @@ jobs:
         run: |
           DEPENDENCIES=$(license-checker-rseidelsohn --direct 0 --production --unknown --json)
           DEPENDENCIES=$(echo $DEPENDENCIES | jq 'with_entries(.value = .value.licenses)')
-          echo "DEPENDENCIES=$DEPENDENCIES" >> $GITHUB_OUTPUT
+          echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
+          echo $DEPENDENCIES >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         working-directory: ${{ inputs.working_dir }}
 
