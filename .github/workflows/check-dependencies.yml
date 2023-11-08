@@ -150,6 +150,11 @@ jobs:
           ref: ${{ inputs.target_branch }}
         if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
 
+      - name: install go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "^1.21.3"
+
       - name: install go-licenses
         run: go install github.com/google/go-licenses@latest
       
