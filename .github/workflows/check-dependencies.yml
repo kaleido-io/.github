@@ -2,7 +2,7 @@ on:
   workflow_call:
     outputs:
       dependencies:
-        description: 'project dependencies, versions and licenses'
+        description: "project dependencies, versions and licenses"
         value: ${{ jobs.build.outputs.dependencies }}
     inputs:
       package_manager:
@@ -16,15 +16,15 @@ on:
       working_dir:
         required: false
         type: string
-        default: './'
+        default: "./"
       main_go_dir:
         required: false
         type: string
-        default: './'
+        default: "./"
       node_version:
         required: false
         type: string
-        default: '18'
+        default: "18"
       submodules:
         required: false
         type: string
@@ -33,7 +33,7 @@ on:
           recursively checkout submodules.
           When the `ssh-key` input is not provided, SSH URLs beginning with `git@github.com:` are
           converted to HTTPS.
-        default: 'false'
+        default: "false"
     secrets:
       ORG_PAT:
         required: false
@@ -110,7 +110,7 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
 
   dependency-check-go:
-    if : ${{ inputs.package_manager }} == 'go'
+    if: ${{ inputs.package_manager }} == 'go'
     runs-on: ubuntu-latest
     outputs:
       dependencies: ${{ steps.dependencies.outputs.DEPENDENCIES }}
@@ -121,7 +121,7 @@ jobs:
           fetch-depth: 0
           submodules: ${{ inputs.submodules == 'true' }}
         if: (inputs.submodules == 'true' || inputs.submodules == 'false')  && github.event_name != 'workflow_dispatch'
-      
+
       # assumes the submodules is a private repo
       - name: git checkout w/ recursive submodules
         uses: actions/checkout@v2
@@ -157,12 +157,14 @@ jobs:
 
       - name: install go-licenses
         run: go install github.com/google/go-licenses@latest
-      
+
       - name: install miller csv parser tool
         run: sudo apt-get install miller
 
       - name: verify license types
         run: |
+          ls -al
+          pwd
           go-licenses check --disallowed_types restricted --disallowed_types forbidden --ignore github.com/kaleido-io . 2> /dev/null
           # forbidden list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L341
           # restricted list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L185
@@ -179,7 +181,7 @@ jobs:
           GO_MOD_DEPS=$(echo $GO_MOD_DEPS | jq 'map(select(.Indirect == null))')
           # that is a list like:
           # [{ "Path": "github.com/cert-manager/cert-manager","Version": "v1.9.1"}, {...}]
-          
+
           # for each dependency, find its license and construct a json in the form of:
           # { "github.com/aidarkhanov/nanoid@v1.9.1": "MIT", ...}
           # note: the dependency from GO_MOD_DEPS may be a substring of one in GO_LICENSES and may not fully exactly
