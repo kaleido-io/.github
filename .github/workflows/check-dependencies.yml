@@ -165,7 +165,7 @@ jobs:
         run: |
           ls -al
           pwd
-          go-licenses check --disallowed_types restricted --disallowed_types forbidden --ignore github.com/kaleido-io . 2> /dev/null
+          go-licenses check --disallowed_types restricted --disallowed_types forbidden --ignore github.com/kaleido-io .
           # forbidden list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L341
           # restricted list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L185
         working-directory: ${{ inputs.main_go_dir }}
