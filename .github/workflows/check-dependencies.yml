@@ -1,9 +1,12 @@
 on:
   workflow_call:
     outputs:
-      dependencies:
-        description: "project dependencies, versions and licenses"
-        value: ${{ jobs.dependency-check.outputs.dependencies }}
+      npm-dependencies:
+        description: "project's npm dependencies, versions and licenses"
+        value: ${{ jobs.dependency-check.outputs.npm-dependencies }}
+      go-dependencies:
+        description: "project's go dependencies, versions and licenses"
+        value: ${{ jobs.dependency-check.outputs.go-dependencies }}
     inputs:
       package_manager:
         required: true
@@ -44,7 +47,8 @@ jobs:
     if: ${{ inputs.package_manager }} == 'go'
     runs-on: ubuntu-latest
     outputs:
-      dependencies: ${{ steps.dependencies.outputs.DEPENDENCIES }}
+      npm-dependencies: ${{ steps.npm-dependencies.outputs.DEPENDENCIES }}
+      go-log: ${{ steps.go-dependencies.outputs.DEPENDENCIES }}
     steps:
       - name: git checkout
         uses: actions/checkout@v2
@@ -126,7 +130,7 @@ jobs:
         if: inputs.package_manager == 'npm'
 
       - name: list dependencies for release
-        id: dependencies
+        id: go-dependencies
         run: |
           GO_LICENSES=$(go-licenses report . --ignore github.com/kaleido-io 2> /dev/null | mlr --csv --implicit-csv-header label dependency,repo,license | mlr --icsv --ojson cat | jq 'reduce .[] as $item ({}; . + {($item.dependency): $item.license})')
           # this is a JSON like:
@@ -161,7 +165,7 @@ jobs:
         if: inputs.package_manager == 'go'
 
       - name: list dependencies for release
-        id: dependencies
+        id: npm-dependencies
         run: |
           DEPENDENCIES=$(license-checker-rseidelsohn --direct 0 --production --unknown --json)
           DEPENDENCIES=$(echo $DEPENDENCIES | jq 'with_entries(.value = .value.licenses)')
