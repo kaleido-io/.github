@@ -3,7 +3,7 @@ on:
     outputs:
       dependencies:
         description: "project dependencies, versions and licenses"
-        value: ${{ jobs.build.outputs.dependencies }}
+        value: ${{ jobs.dependency-check.outputs.dependencies }}
     inputs:
       package_manager:
         required: true
@@ -40,76 +40,7 @@ on:
       NPM_TOKEN:
         required: false
 jobs:
-  dependency-check-npm:
-    if: ${{ inputs.package_manager }} == 'npm'
-    runs-on: ubuntu-latest
-    outputs:
-      dependencies: ${{ steps.dependencies.outputs.DEPENDENCIES }}
-    steps:
-      - name: git checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          submodules: ${{ inputs.submodules == 'true' }}
-        if: (inputs.submodules == 'true' || inputs.submodules == 'false')  && github.event_name != 'workflow_dispatch'
-
-      # assumes the submodules is a private repo
-      - name: git checkout w/ recursive submodules
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          submodules: ${{ inputs.submodules }}
-          token: ${{ secrets.ORG_PAT }}
-        if: inputs.submodules == 'recursive' && github.event_name != 'workflow_dispatch'
-
-      # Follow the same git checkout process with submodules but specify a branch ref if it is a workflow_dispatch build
-      - name: git checkout workflow_dispatch
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          submodules: ${{ inputs.submodules == 'true' }}
-          ref: ${{ inputs.target_branch }}
-        if: (inputs.submodules == 'true' || inputs.submodules == 'false') && github.event_name == 'workflow_dispatch'
-
-      # assumes the submodules is a private repo
-      - name: git checkout w/ recursive submodules workflow_dispatch
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          submodules: ${{ inputs.submodules }}
-          token: ${{ secrets.ORG_PAT }}
-          ref: ${{ inputs.target_branch }}
-        if: inputs.submodules == 'recursive' && github.event_name == 'workflow_dispatch'
-
-      - name: install node@${{inputs.node_version}}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      - name: install npm dependencies
-        run: npm install --production
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: install npm license checker tool
-        run: npm install -g license-checker-rseidelsohn
-
-      - name: verify license types
-        run: license-checker-rseidelsohn --production --unknown --failOn "GPL;AGPL"
-        #working-directory: ${{ inputs.working_dir }}
-
-      - name: list dependencies for release
-        id: dependencies
-        run: |
-          DEPENDENCIES=$(license-checker-rseidelsohn --direct 0 --production --unknown --json)
-          DEPENDENCIES=$(echo $DEPENDENCIES | jq 'with_entries(.value = .value.licenses)')
-          echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
-          echo $DEPENDENCIES >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "$DEPENDENCIES"
-        working-directory: ${{ inputs.working_dir }}
-
-  dependency-check-go:
+  dependency-check:
     if: ${{ inputs.package_manager }} == 'go'
     runs-on: ubuntu-latest
     outputs:
@@ -154,14 +85,33 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "^1.21.3"
+        if: inputs.package_manager == 'go'
+
+      - name: install node@${{inputs.node_version}}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node_version }}
+        if: inputs.package_manager == 'npm'
+
+      - name: install npm dependencies
+        run: npm install --production
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: inputs.package_manager == 'npm'
 
       - name: install go-licenses
         run: go install github.com/google/go-licenses@latest
+        if: inputs.package_manager == 'go'
 
       - name: install miller csv parser tool
         run: sudo apt-get install miller
+        if: inputs.package_manager == 'go'
 
-      - name: verify license types
+      - name: install npm license checker tool
+        run: npm install -g license-checker-rseidelsohn
+        if: inputs.package_manager == 'npm'
+
+      - name: verify go license types
         run: |
           ls -al
           pwd
@@ -169,6 +119,11 @@ jobs:
           # forbidden list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L341
           # restricted list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L185
         working-directory: ${{ inputs.main_go_dir }}
+        if: inputs.package_manager == 'go'
+
+      - name: verify npm license types
+        run: license-checker-rseidelsohn --production --unknown --failOn "GPL;AGPL"
+        if: inputs.package_manager == 'npm'
 
       - name: list dependencies for release
         id: dependencies
@@ -203,3 +158,16 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "$DEPENDENCIES"
         working-directory: ${{ inputs.main_go_dir }}
+        if: inputs.package_manager == 'go'
+
+      - name: list dependencies for release
+        id: dependencies
+        run: |
+          DEPENDENCIES=$(license-checker-rseidelsohn --direct 0 --production --unknown --json)
+          DEPENDENCIES=$(echo $DEPENDENCIES | jq 'with_entries(.value = .value.licenses)')
+          echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
+          echo $DEPENDENCIES >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "$DEPENDENCIES"
+        working-directory: ${{ inputs.working_dir }}
+        if: inputs.package_manager == 'npm'
