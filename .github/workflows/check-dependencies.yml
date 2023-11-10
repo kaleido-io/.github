@@ -8,7 +8,7 @@ on:
         description: "project's go dependencies, versions and licenses"
         value: ${{ jobs.dependency-check.outputs.go-dependencies }}
     inputs:
-      package_manager:
+      language:
         required: true
         type: string
         default: npm
@@ -44,7 +44,7 @@ on:
         required: false
 jobs:
   dependency-check:
-    if: ${{ inputs.package_manager }} == 'go'
+    if: ${{ inputs.language }} == 'golang'
     runs-on: ubuntu-latest
     outputs:
       npm-dependencies: ${{ steps.npm-dependencies.outputs.DEPENDENCIES }}
@@ -89,31 +89,31 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "^1.21.3"
-        if: inputs.package_manager == 'go'
+        if: inputs.language == 'golang'
 
       - name: install node@${{inputs.node_version}}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ inputs.node_version }}
-        if: inputs.package_manager == 'npm'
+        if: inputs.language == 'nodejs'
 
       - name: install npm dependencies
         run: npm install --production
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: inputs.package_manager == 'npm'
+        if: inputs.language == 'nodejs'
 
       - name: install go-licenses
         run: go install github.com/google/go-licenses@latest
-        if: inputs.package_manager == 'go'
+        if: inputs.language == 'golang'
 
       - name: install miller csv parser tool
         run: sudo apt-get install miller
-        if: inputs.package_manager == 'go'
+        if: inputs.language == 'golang'
 
       - name: install npm license checker tool
         run: npm install -g license-checker-rseidelsohn
-        if: inputs.package_manager == 'npm'
+        if: inputs.language == 'nodejs'
 
       - name: verify go license types
         run: |
@@ -123,11 +123,11 @@ jobs:
           # forbidden list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L341
           # restricted list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L185
         working-directory: ${{ inputs.main_go_dir }}
-        if: inputs.package_manager == 'go'
+        if: inputs.language == 'golang'
 
       - name: verify npm license types
         run: license-checker-rseidelsohn --production --unknown --failOn "GPL;AGPL"
-        if: inputs.package_manager == 'npm'
+        if: inputs.language == 'nodejs'
 
       - name: list dependencies for release
         id: go-dependencies
@@ -162,7 +162,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "$DEPENDENCIES"
         working-directory: ${{ inputs.main_go_dir }}
-        if: inputs.package_manager == 'go'
+        if: inputs.language == 'golang'
 
       - name: list dependencies for release
         id: npm-dependencies
@@ -174,4 +174,4 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "$DEPENDENCIES"
         working-directory: ${{ inputs.working_dir }}
-        if: inputs.package_manager == 'npm'
+        if: inputs.language == 'nodejs'
