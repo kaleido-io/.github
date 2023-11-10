@@ -12,18 +12,14 @@ on:
         required: true
         type: string
         default: npm
+      project_entrypoint:
+        required: true
+        type: string
+        default: "./"
       target_branch:
         required: false
         type: string
         default: main
-      working_dir:
-        required: false
-        type: string
-        default: "./"
-      main_go_dir:
-        required: false
-        type: string
-        default: "./"
       node_version:
         required: false
         type: string
@@ -122,14 +118,15 @@ jobs:
           go-licenses check --disallowed_types restricted --disallowed_types forbidden --ignore github.com/kaleido-io .
           # forbidden list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L341
           # restricted list: https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L185
-        working-directory: ${{ inputs.main_go_dir }}
+        working-directory: ${{ inputs.project_entrypoint }}
         if: inputs.language == 'golang'
 
       - name: verify npm license types
         run: license-checker-rseidelsohn --production --unknown --failOn "GPL;AGPL"
+        working-directory: ${{ inputs.project_entrypoint }}
         if: inputs.language == 'nodejs'
 
-      - name: list dependencies for release
+      - name: list go dependencies for release
         id: go-dependencies
         run: |
           GO_LICENSES=$(go-licenses report . --ignore github.com/kaleido-io 2> /dev/null | mlr --csv --implicit-csv-header label dependency,repo,license | mlr --icsv --ojson cat | jq 'reduce .[] as $item ({}; . + {($item.dependency): $item.license})')
@@ -161,10 +158,10 @@ jobs:
           echo $DEPENDENCIES >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           echo "$DEPENDENCIES"
-        working-directory: ${{ inputs.main_go_dir }}
+        working-directory: ${{ inputs.project_entrypoint }}
         if: inputs.language == 'golang'
 
-      - name: list dependencies for release
+      - name: list npm dependencies for release
         id: npm-dependencies
         run: |
           DEPENDENCIES=$(license-checker-rseidelsohn --direct 0 --production --unknown --json)
@@ -173,5 +170,5 @@ jobs:
           echo $DEPENDENCIES >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           echo "$DEPENDENCIES"
-        working-directory: ${{ inputs.working_dir }}
+        working-directory: ${{ inputs.project_entrypoint }}
         if: inputs.language == 'nodejs'
