@@ -113,7 +113,11 @@ jobs:
     steps:
       - name: SBOM
         if: ${{ inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang') }}
-        run: echo ${{ needs.SBOM.outputs.dependencies }}
+        run: |
+          echo ${{ needs.SBOM.outputs.dependencies }}
+          echo ${{ needs.SBOM.outputs.npm-dependencies }}
+          echo ${{ needs.SBOM.outputs.go-dependencies }}
+
       - name: git checkout
         uses: actions/checkout@v2
         with:
