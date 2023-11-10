@@ -11,7 +11,7 @@ on:
       language:
         required: true
         type: string
-        default: npm
+        default: nodejs
       project_entrypoint:
         required: true
         type: string
@@ -40,7 +40,6 @@ on:
         required: false
 jobs:
   dependency-check:
-    if: ${{ inputs.language }} == 'golang'
     runs-on: ubuntu-latest
     outputs:
       npm-dependencies: ${{ steps.npm-dependencies.outputs.DEPENDENCIES }}
