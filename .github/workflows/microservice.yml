@@ -2,10 +2,10 @@ on:
   workflow_call:
     outputs:
       image:
-        description: 'pushed image'
+        description: pushed image
         value: ${{ jobs.build.outputs.image }}
       image_sha:
-        description: 'SHA of pushed image'
+        description: SHA of pushed image
         value: ${{ jobs.build.outputs.image_sha }}
     inputs:
       namespace:
@@ -51,7 +51,11 @@ on:
       working_dir:
         required: false
         type: string
-        default: './'
+        default: ./
+      project_entrypoint:
+        required: false
+        type: string
+        default: ./
       submodules:
         required: false
         type: string
@@ -68,6 +72,11 @@ on:
           Whether to run component test.  Requires a makefile target of component-test.
           (support for package.json script to be added in future )
         default: false
+      SBOM:
+        required: false
+        type: boolean
+        description: Generate SBOM and set SBOM label on docker image
+        default: false
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -80,12 +89,26 @@ on:
       NPM_TOKEN:
         required: false
 jobs:
+  SBOM:
+    # only run if SBOM is requested && language is nodejs or golang
+    if: ${{ inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang') }}
+    uses: ./sbom.yml
+    with:
+      language: ${{ inputs.language }}
+      project_entrypoint: ${{ inputs.project_entrypoint }}
+    secrets:
+      ORG_PAT: ${{ secrets.ORG_PAT }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   build:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.push.outputs.IMAGE }}
       image_sha: ${{ steps.push.outputs.SHA }}
     steps:
+      - name: SBOM
+        if: ${{ inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang') }}
+        run: echo ${{ needs.SBOM.outputs.dependencies }}
       - name: git checkout
         uses: actions/checkout@v2
         with:
