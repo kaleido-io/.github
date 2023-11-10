@@ -103,6 +103,10 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    # wait for SBOM to finish before starting build
+    needs: SBOM
+    # run always even if SBOM is skipped
+    if: ${{ always() }}
     outputs:
       image: ${{ steps.push.outputs.IMAGE }}
       image_sha: ${{ steps.push.outputs.SHA }}
