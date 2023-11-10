@@ -92,7 +92,7 @@ jobs:
   SBOM:
     # only run if SBOM is requested && language is nodejs or golang
     if: ${{ inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang') }}
-    uses: ./sbom.yml
+    uses: ./.github/workflows/sbom.yml
     with:
       language: ${{ inputs.language }}
       project_entrypoint: ${{ inputs.project_entrypoint }}
