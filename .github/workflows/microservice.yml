@@ -96,6 +96,7 @@ jobs:
     with:
       language: ${{ inputs.language }}
       project_entrypoint: ${{ inputs.project_entrypoint }}
+      target_branch: ${{ inputs.target_branch }}
     secrets:
       ORG_PAT: ${{ secrets.ORG_PAT }}
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
