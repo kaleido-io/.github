@@ -45,7 +45,7 @@ jobs:
       npm-dependencies: ${{ steps.npm-dependencies.outputs.DEPENDENCIES }}
       go-log: ${{ steps.go-dependencies.outputs.DEPENDENCIES }}
       # a final output called dependencies which will be equal to npm-dependencies or go-dependencies dependeing on the language
-      dependencies: ${{ inputs.language == 'nodejs' && steps.npm-despendencies.outputs.DEPENDENCIES || steps.go-dependencies.outputs.DEPENDENCIES }}
+      dependencies: ${{ steps.outputs.outputs.DEPENDENCIES }}
     steps:
       - name: git checkout
         uses: actions/checkout@v2
@@ -173,3 +173,12 @@ jobs:
           echo "$DEPENDENCIES"
         working-directory: ${{ inputs.project_entrypoint }}
         if: inputs.language == 'nodejs'
+
+      # output: get the output from either npm-dependencies or go-dependencies depending on the language
+      - name: outputs
+        id: outputs
+        run: |
+          echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
+          echo ${{ steps.npm-dependencies.outputs.DEPENDENCIES || steps.go-dependencies.outputs.DEPENDENCIES }} >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
