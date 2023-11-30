@@ -45,7 +45,7 @@ jobs:
       npm-dependencies: ${{ steps.npm-dependencies.outputs.DEPENDENCIES }}
       go-dependencies: ${{ steps.go-dependencies.outputs.DEPENDENCIES }}
       # a final output called dependencies which will be equal to npm-dependencies or go-dependencies dependeing on the language
-      dependencies: ${{ steps.outputs.outputs.DEPENDENCIES }}
+      dependencies: ${{ steps.sbom-outputs.outputs.DEPENDENCIES }}
     steps:
       - name: git checkout
         uses: actions/checkout@v2
@@ -176,7 +176,7 @@ jobs:
 
       # output: get the output from either npm-dependencies or go-dependencies depending on the language
       - name: outputs
-        id: outputs
+        id: sbom-outputs
         run: |
           echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
           echo ${{ steps.npm-dependencies.outputs.DEPENDENCIES || steps.go-dependencies.outputs.DEPENDENCIES }} >> $GITHUB_OUTPUT
