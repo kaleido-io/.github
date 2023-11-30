@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       npm-dependencies: ${{ steps.npm-dependencies.outputs.DEPENDENCIES }}
-      go-log: ${{ steps.go-dependencies.outputs.DEPENDENCIES }}
+      go-dependencies: ${{ steps.go-dependencies.outputs.DEPENDENCIES }}
       # a final output called dependencies which will be equal to npm-dependencies or go-dependencies dependeing on the language
       dependencies: ${{ steps.outputs.outputs.DEPENDENCIES }}
     steps:
