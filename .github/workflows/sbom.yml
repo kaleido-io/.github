@@ -178,7 +178,13 @@ jobs:
       - name: outputs
         id: sbom-outputs
         run: |
-          echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
-          echo ${{ steps.npm-dependencies.outputs.DEPENDENCIES || steps.go-dependencies.outputs.DEPENDENCIES }} >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # echo "DEPENDENCIES<<EOF" >> $GITHUB_OUTPUT
+          # echo $DEPENDENCIES >> $GITHUB_OUTPUT
+          # echo "EOF" >> $GITHUB_OUTPUT
+          # echo "$DEPENDENCIES"
+          echo "DEPENDENCIES=$DEPENDENCIES" >> $GITHUB_OUTPUT
+          echo $DEPENDENCIES
+          echo $GITHUB_OUTPUT
+        env:
+          DEPENDENCIES: ${{ steps.npm-dependencies.outputs.DEPENDENCIES || steps.go-dependencies.outputs.DEPENDENCIES }}
 
