@@ -111,12 +111,12 @@ jobs:
       image: ${{ steps.push.outputs.IMAGE }}
       image_sha: ${{ steps.push.outputs.SHA }}
     steps:
-      - name: SBOM
-        if: ${{ inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang') }}
-        run: |
-          echo ${{ needs.SBOM.outputs.dependencies }}
-          echo ${{ needs.SBOM.outputs.npm-dependencies }}
-          echo ${{ needs.SBOM.outputs.go-dependencies }}
+      # - name: SBOM
+      #   if: ${{ inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang') }}
+      #   run: |
+      #     echo "SBOM_LABEL=$SBOM_LABEL" >> $GITHUB_ENV
+      #   env:
+      #     SBOM_LABEL: ${{ needs.SBOM.outputs.npm-dependencies || needs.SBOM.outputs.go-dependencies }}
 
       - name: git checkout
         uses: actions/checkout@v2
@@ -204,15 +204,26 @@ jobs:
       # assumes linting, unit tests, e2e tests, coverage, etc. are handled by building the image
       - name: build
         run: |
-          docker build ${{ inputs.docker_build_args }} . -t $IMAGE
+          docker build ${{ inputs.docker_build_args }} . -t $IMAGE --label SBOM="$SBOM_LABEL"
         working-directory: ${{ inputs.working_dir }}
         if: inputs.build_with_npm_token == false
+        env:
+          SBOM_LABEL: ${{ needs.SBOM.outputs.npm-dependencies || needs.SBOM.outputs.go-dependencies }}
 
       - name: build with secret args
         run: |
-          docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} ${{ inputs.docker_build_args }} . -t $IMAGE
+          docker build --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} ${{ inputs.docker_build_args }} . -t $IMAGE --label SBOM="$SBOM_LABEL"
         working-directory: ${{ inputs.working_dir }}
         if: inputs.build_with_npm_token == true
+        env:
+          SBOM_LABEL: ${{ needs.SBOM.outputs.npm-dependencies || needs.SBOM.outputs.go-dependencies }}
+
+      - name: check SBOM label
+        run: 
+          docker inspect $IMAGE --format '{{ .Config.Labels.SBOM }}'
+          docker inspect $IMAGE
+        working-directory: ${{ inputs.working_dir }}
+        if: inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang')
 
       - name: component-test
         run: |
