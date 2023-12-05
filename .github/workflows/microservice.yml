@@ -219,7 +219,7 @@ jobs:
           SBOM_LABEL: ${{ needs.SBOM.outputs.npm-dependencies || needs.SBOM.outputs.go-dependencies }}
 
       - name: check SBOM label
-        run: 
+        run: |
           docker inspect $IMAGE --format '{{ .Config.Labels.SBOM }}'
           docker inspect $IMAGE
         working-directory: ${{ inputs.working_dir }}
