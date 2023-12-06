@@ -221,7 +221,6 @@ jobs:
       - name: check SBOM label
         run: |
           docker inspect $IMAGE --format '{{ .Config.Labels.SBOM }}'
-          docker inspect $IMAGE
         working-directory: ${{ inputs.working_dir }}
         if: inputs.SBOM == true && (inputs.language == 'nodejs' || inputs.language == 'golang')
 
