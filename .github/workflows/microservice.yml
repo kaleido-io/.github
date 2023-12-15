@@ -182,6 +182,11 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         if: inputs.build_with_npm_token == true
 
+      - name: check image to ensure /sbom.spdx.json exists
+        run: |
+          docker run --rm $IMAGE /bin/sh -c "test -f /sbom.spdx.json"
+        working-directory: ${{ inputs.working_dir }}
+
       - name: component-test
         run: |
           make component-test
