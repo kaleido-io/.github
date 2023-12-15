@@ -184,7 +184,7 @@ jobs:
 
       - name: check image to ensure /sbom.spdx.json exists
         run: |
-          docker run --rm $IMAGE /bin/sh -c "test -f /sbom.spdx.json"
+          docker run --rm --entrypoint /bin/sh $IMAGE -c "test -f /sbom.spdx.json"
         working-directory: ${{ inputs.working_dir }}
 
       - name: component-test
