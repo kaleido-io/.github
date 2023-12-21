@@ -109,13 +109,13 @@ jobs:
           PACKAGE_VERSION=$(jq -r .version package.json)
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
         if: inputs.language == 'nodejs'
-        working-directory: "./server"
+        working-directory: "./backend"
 
       - name: provided version
         run: |
           echo "PACKAGE_VERSION=${{ inputs.next_version }}" >> $GITHUB_ENV
         if: inputs.next_version != '' && inputs.language != 'nodejs'
-        working-directory: "./server"
+        working-directory: "./backend"
 
       - name: build version
         run: |
