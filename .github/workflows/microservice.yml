@@ -137,7 +137,7 @@ jobs:
       - name: build version
         id: version
         run: |
-          BUILD_VERSION="${{ env.PACKAGE_VERSION }}-$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
+          BUILD_VERSION="${{ env.PACKAGE_VERSION }}_$(date +"%Y%m%d")-$GITHUB_RUN_NUMBER"
           if [[ "${{ inputs.docker_image_tag }}" != "" ]]; then
             echo "Using the provided docker image tag: ${{ inputs.docker_image_tag }}"
             BUILD_VERSION="${{ inputs.docker_image_tag }}"
